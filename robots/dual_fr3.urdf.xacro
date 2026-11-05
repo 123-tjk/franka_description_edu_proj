@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_fr3">
+
+  <xacro:include filename="$(find franka_description)/robots/common/franka_robot.xacro"/>
+
+  <!-- ==================== 身体尺寸 ==================== -->
+  <xacro:property name="body_w" value="1.10"/>   <!-- x：左右宽度 -->
+  <xacro:property name="body_d" value="0.34"/>   <!-- y：前后厚度 -->
+  <xacro:property name="body_h" value="0.55"/>   <!-- z：高度 -->
+  <xacro:property name="body_m" value="20.0"/>   <!-- 质量 kg -->
+
+  <!-- 安装面微调 -->
+  <xacro:property name="shoulder_z" value="0.0"/>   <!-- 0=端面正中，负数往下 -->
+  <xacro:property name="arm_gap_fix" value="0.0"/>  <!-- 有缝隙就加大（如 0.005） -->
+
+  <link name="world"/>
+
+  <!-- ==================== 可见的"身体" ==================== -->
+  <link name="body">
+    <visual>
+      <geometry><box size="${body_w} ${body_d} ${body_h}"/></geometry>
+      <material name="body_blue"><color rgba="0.30 0.55 0.85 1.0"/></material>
+    </visual>
+    <collision>
+      <geometry><box size="${body_w} ${body_d} ${body_h}"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="${body_m}"/>
+      <inertia ixx="${body_m/12*(body_d*body_d + body_h*body_h)}" ixy="0" ixz="0"
+               iyy="${body_m/12*(body_w*body_w + body_h*body_h)}" iyz="0"
+               izz="${body_m/12*(body_w*body_w + body_d*body_d)}"/>
+    </inertial>
+  </link>
+
+  <joint name="world_to_body" type="fixed">
+    <parent link="world"/>
+    <child  link="body"/>
+    <origin xyz="0 0 ${body_h/2}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ============ 左肩：精确落在 +x 端面中心 ============ -->
+  <joint name="body_to_left_mount" type="fixed">
+    <parent link="body"/>
+    <child  link="left_mount"/>
+    <origin xyz="${body_w/2 + arm_gap_fix} 0 ${shoulder_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ============ 右肩：精确落在 -x 端面中心 ============ -->
+  <joint name="body_to_right_mount" type="fixed">
+    <parent link="body"/>
+    <child  link="right_mount"/>
+    <origin xyz="${-body_w/2 - arm_gap_fix} 0 ${shoulder_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ============ 左臂：横过来，朝 +x 伸出 ============ -->
+  <xacro:franka_robot
+      robot_type="fr3"
+      arm_prefix="left_"
+      connected_to="left_mount"
+      xyz="0 0 0"
+      rpy="0 ${pi/2} 0"
+      hand="true" ee_id="franka_hand"/>
+
+  <!-- ============ 右臂：横过来，朝 -x 伸出 ============ -->
+  <xacro:franka_robot
+      robot_type="fr3"
+      arm_prefix="right_"
+      connected_to="right_mount"
+      xyz="0 0 0"
+      rpy="0 ${-pi/2} 0"
+      hand="true" ee_id="franka_hand"/>
+
+</robot>
